@@ -5,13 +5,6 @@ dbpath = 'dbcatalog.db'
 volumes = []
 files = []
 
-print('begin')
-
-# types:
-# f file
-# d directory
-# l link
-
 def getnextid(l):
     id=0
     for item in l:
@@ -77,7 +70,7 @@ def showvolumes():
         print(volume)
 
 # main
-
+print("begin")
 loaddb()
 
 opc=-1
