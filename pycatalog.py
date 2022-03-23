@@ -1,5 +1,5 @@
 from os import listdir,path
-from sqlite3 import connect
+from sqlite3 import connect,IntegrityError
 
 dbpath = 'dbcatalog.db'
 volumes = []
@@ -17,7 +17,7 @@ def addnewvolume():
     volume['id']=getnextid(volumes)
     volume['name']=input('Nombre: ')
     volume['description']=input('Descripcion: ')
-    volume['path']=input('Path: ')
+    volume['path']=input('Path: ')                                              # comprobar que existe
     volume['lastscan']=-1
     volumes.append(volume)
 
@@ -61,38 +61,104 @@ def loaddb():
     db.execute("create table if not exists tvolume (id integer primary key,name text, description text,path text,lastscan integer)")
     db.execute("create table if not exists tfile (id integer primery key, pid integer, vid integer, name text, type text, size integer, date integer)");
     db.commit()
+    cur=db.cursor()
+    cur.execute("select * from tvolume")
+    rows = cur.fetchall()
+    for item in rows:
+        volume = {}
+        volume['id']=item[0]
+        volume['name']=item[1]
+        volume['description']=item[2]
+        volume['path']=item[3]
+        volumes.append(volume)
+    cur.execute("select * from tfile")
+    rows = cur.fetchall()
+    for item in rows:
+        file={}
+        file['id']=item[0]
+        file['pid']=item[1]
+        file['vid']=item[2]
+        file['name']=item[3]
+        file['type']=item[4]
+        files.append(file)
+    db.close()
 
 def savedb():
-    pass
-
-def showvolumes():
+    # remove database?
+    db = connect(dbpath)
     for volume in volumes:
+        try:
+            db.execute(f"insert into tvolume (id,name,description,path) values ({volume['id']},'{volume['name']}','{volume['description']}','{volume['path']}')")
+        except IntegrityError:
+            pass
+    for file in files:
+        try:
+            db.execute(f"insert into tfile (id,pid,vid,name,type) values ({file['id']},{file['pid']},{file['vid']},'{file['name']}','{file['type']}')");
+        except IntegrityError:
+            pass
+    db.commit()
+    db.close()
+
+def removedb():
+    db = connect(dbpath)
+    db.execute("delete from tvolume")
+    db.execute("delete from tfile");
+    db.commit()
+    db.close()
+
+def showvolumes():                                                              # dar formato
+    for volume in volumes:                                                      # mostar el contador de archivos
         print(volume)
+
+def removevolume():
+    pass
 
 # main
 print("begin")
 loaddb()
 
 opc=-1
+opc2=-1
+print("Welcome to PyCatalog")
 while (opc!=0):
-    print("Welcome to PyCatalog")
     print("Select your action:")
-    print("1. Scan a new volume:")
-    print("2. Search a file")
-    print("3. Save on db")
-    print("4. Show volumes")
+    print("1. Add a new volume")
+    print("2. List volumes")
+    print("3. Remove a volume")
+    print("4. Search a file")
+    print("5. Admin options")
     print("0. Quit")
     opc = int(input(": "))
     if opc==1:
         addnewvolume()
     elif opc==2:
-        searchfile()
-    elif opc==3:
-        savedb()
-    elif opc==4:
         showvolumes()
-
-print(volumes)
-print(files)
+    elif opc==3:
+        removevolume()
+    elif opc==4:
+        searchfile()
+    elif opc==5:
+        while opc2!=0:
+            print("Select your action:")
+            print("1. Load data from database")
+            print("2. Save data to database")
+            print("3. Remove database")
+            print("4. Show current data")
+            print("5. Remove current data")
+            print("0. Back to main menu")
+            opc2 = int(input(": "))                                             # comprobar que no se inserta vacio
+            if opc2==1:
+                loaddb()
+            elif opc2==2:
+                savedb()
+            elif opc2==3:
+                removedb()
+            elif opc2==4:
+                print(volumes)
+                #print(files)
+            elif opc2==5:
+                volumes = []
+                files = []
+        opc2=-1
 
 print('end')
