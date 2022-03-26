@@ -1,5 +1,5 @@
 from os import listdir,path
-from sqlite3 import connect,IntegrityError
+from sqlite3 import connect,IntegrityError,OperationalError
 
 dbpath = 'dbcatalog.db'
 volumes = []
@@ -29,6 +29,8 @@ def scandirectory(path_ini,vid,pid):
         items = listdir(path_ini)
     except PermissionError:
         print(f"{path_ini} Permission Error")
+    except OSError:
+        print(f"OSError - Trying to continue")
     for item in items:
         path_temp = path_ini+'/'+item
         print(path_temp)
@@ -95,6 +97,8 @@ def savedb():
         try:
             db.execute(f"insert into tfile (id,pid,vid,name,type) values ({file['id']},{file['pid']},{file['vid']},'{file['name']}','{file['type']}')");
         except IntegrityError:
+            pass
+        except OperationalError:
             pass
     db.commit()
     db.close()
